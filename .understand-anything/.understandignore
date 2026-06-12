@@ -1,0 +1,2 @@
+# .understandignore
+# Built-in defaults exclude: node_modules/, .git/, dist/, build/, *.lock, *.min.js, etc.

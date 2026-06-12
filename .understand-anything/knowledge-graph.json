@@ -1,0 +1,470 @@
+{
+  "project": {
+    "name": "monday",
+    "languages": ["html", "javascript", "css"],
+    "frameworks": ["three.js"],
+    "description": "太阳系3D交互星图与神经网络可视化集合 —— 包含程序化纹理行星渲染、双击放大真实纹理模式、天文科普面板、以及两个独立的神经网络信号传播可视化页面",
+    "entryPoints": ["solar-system.html", "neural-network-3d.html", "neural-network-viz.html"],
+    "features": [
+      "程序化噪声纹理生成（FBM多倍频程噪声）",
+      "8大行星+太阳的3D轨道系统",
+      "双击放大查看真实NASA纹理",
+      "航天HUD风格右侧详情面板与左侧科普面板",
+      "3层太阳光晕（加性混合）",
+      "小行星带（2500粒子）、彗星轨道、双层星场、星云背景",
+      "3D神经网络可视化（6层前馈网络 + 信号传播动画）",
+      "2D Canvas神经网络可视化（粒子背景 + 层标签 + 思维词闪现）"
+    ]
+  },
+
+  "nodes": [
+    {
+      "id": "file:solar-system.html",
+      "type": "file",
+      "name": "solar-system.html",
+      "filePath": "solar-system.html",
+      "summary": "主页面：深色航天控制台风格界面。包含左上角HUD信息面板、右侧可滑入的星球详情面板(#panel)、左侧特征科普面板(#feature-panel)、底部操作提示、以及2D标签叠加画布。通过 <script> 标签加载本地 three.js 库、overview.js 和 zoom.js。所有CSS样式内联在 <style> 中，使用毛玻璃效果、扫描线、呼吸状态点等航天HUD设计语言。",
+      "tags": ["html", "entry-point", "dashboard", "solar-system", "hud-ui"],
+      "complexity": "simple",
+      "domains": ["presentation", "space-science", "ui"]
+    },
+    {
+      "id": "file:src/overview.js",
+      "type": "file",
+      "name": "overview.js",
+      "filePath": "src/overview.js",
+      "summary": "太阳系全景模式核心引擎。负责：Three.js场景初始化（场景、透视相机、渲染器、雾效）、程序化纹理生成（makeTexture/noiseTexture/vnoise/fbm）、太阳构建与3层光晕精灵、星场与星云背景、8大行星+轨道环+土星环+月球构建、小行星带（2500粒子带圆形alphaMap）、彗星椭圆轨道系统、鼠标/触摸旋转缩放交互、双击放大触发、右侧详情面板(openPanel)、FPS计数、requestAnimationFrame动画循环。872行。",
+      "tags": ["javascript", "three.js", "core-engine", "procedural-generation", "solar-system"],
+      "complexity": "complex",
+      "domains": ["overview-engine", "rendering", "interaction", "animation"]
+    },
+    {
+      "id": "file:src/zoom.js",
+      "type": "file",
+      "name": "zoom.js",
+      "filePath": "src/zoom.js",
+      "summary": "放大模式引擎。负责：预加载维基媒体真实纹理（TextureLoader）、zoomToPlanet 函数（切换真实纹理+添加行星专属表面动画层如日冕、云层、大红斑等）、zoomOut 函数（恢复程序化纹理并清理动画层）、左侧特征科普面板 openFeaturePanel/closeFeaturePanel（含48x48 Canvas插画绘制 drawFeatureIllo）、行星科学知识点数据 FEATURE_DATA。459行。",
+      "tags": ["javascript", "three.js", "zoom-engine", "texture-loading", "science-content"],
+      "complexity": "medium",
+      "domains": ["zoom-engine", "rendering", "science-data"]
+    },
+    {
+      "id": "file:libs/three.min.js",
+      "type": "file",
+      "name": "three.min.js",
+      "filePath": "libs/three.min.js",
+      "summary": "Three.js r128 压缩版库文件，已本地化存放（589KB）。提供 WebGL 渲染器、场景图、几何体、材质系统、光照、精灵、纹理加载等全部3D基础能力。solar-system.html 引用本地版本，neural-network-3d.html 引用 CDN 版本。",
+      "tags": ["javascript", "library", "3d-engine", "vendor"],
+      "complexity": "library",
+      "domains": ["rendering"]
+    },
+    {
+      "id": "file:neural-network-3d.html",
+      "type": "file",
+      "name": "neural-network-3d.html",
+      "filePath": "neural-network-3d.html",
+      "summary": "独立页面：Three.js 3D 神经网络可视化。6层前馈网络（4-6-8-6-4-2节点），节点呈3D空间排布（带z深度），层间边缘连接（15%随机稀疏化），飞行的信号粒子沿边缘传播并激活目标节点。包含：背景粒子场、脉冲光源、逐层波传播动画、随机节点爆发、思维词条闪现（ANALYZING/PATTERN FOUND等）、鼠标旋转缩放交互、FPS与活跃信号计数。",
+      "tags": ["html", "javascript", "three.js", "neural-network", "visualization", "standalone"],
+      "complexity": "medium",
+      "domains": ["neural-network-viz", "3d-visualization"]
+    },
+    {
+      "id": "file:neural-network-viz.html",
+      "type": "file",
+      "name": "neural-network-viz.html",
+      "filePath": "neural-network-viz.html",
+      "summary": "独立页面：2D Canvas 神经网络可视化。同样是6层前馈网络（4-6-8-6-4-2节点），但使用Canvas 2D API渲染。包含粒子背景场、边缘连线（透明度随激活强度变化）、节点光晕（径向渐变）、信号粒子沿边缘飞行的拖尾效果、层标签（INPUT/HIDDEN 1~4/OUTPUT）、思维词闪现、FPS与活跃信号计数。信号传播方式：从输入层逐波传播 + 随机层噪音爆发。",
+      "tags": ["html", "javascript", "canvas", "neural-network", "visualization", "standalone"],
+      "complexity": "medium",
+      "domains": ["neural-network-viz", "2d-visualization"]
+    },
+
+    {
+      "id": "function:src/overview.js:fbm",
+      "type": "function",
+      "name": "fbm(x, y, seed, oct)",
+      "summary": "分形布朗运动（Fractal Brownian Motion）噪声函数。通过叠加多个倍频程（octaves）的 vnoise 实现有机纹理效果。每层频率翻倍、振幅减半，最终归一化返回。用于生成所有行星的程序化表面纹理（大陆、云带、陨击坑等）。oct 默认5层。",
+      "tags": ["procedural-noise", "texture-generation", "core"],
+      "complexity": "medium",
+      "domains": ["overview-engine", "procedural-generation"]
+    },
+    {
+      "id": "function:src/overview.js:vnoise",
+      "type": "function",
+      "name": "vnoise(x, y, seed)",
+      "summary": "基础平滑值噪声函数。使用正弦哈希和双线性插值实现连续噪声场。结合 floor/fade/lerp，为 fbm 提供底层噪声采样。",
+      "tags": ["procedural-noise", "texture-generation", "foundation"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "procedural-generation"]
+    },
+    {
+      "id": "function:src/overview.js:makeTexture",
+      "type": "function",
+      "name": "makeTexture(fn, size)",
+      "summary": "纹理工厂函数：创建离屏Canvas，执行绘图回调，返回 Three.js CanvasTexture。所有程序化行星纹理均通过此函数生成，size 默认256或512。",
+      "tags": ["texture-factory", "canvas", "foundation"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "procedural-generation"]
+    },
+    {
+      "id": "function:src/overview.js:noiseTexture",
+      "type": "function",
+      "name": "noiseTexture(baseHex, bands)",
+      "summary": "带条纹叠加的基础噪点纹理生成器，用于月球等简单表面。接受底色hex和条纹数组 [color, alpha, count]，叠加随机横纹和噪点。",
+      "tags": ["texture-generation", "noise"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "procedural-generation"]
+    },
+    {
+      "id": "function:src/overview.js:makeGlowSprite",
+      "type": "function",
+      "name": "makeGlowSprite(r, g, b, size)",
+      "summary": "径向渐变光晕精灵生成器。创建128x128 Canvas绘制径向渐变（中心亮→边缘透明），使用AdditiveBlending让叠加光晕自然累加。用于太阳3层光晕和行星边缘柔光。",
+      "tags": ["glow", "sprite", "additive-blending"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "rendering"]
+    },
+    {
+      "id": "function:src/overview.js:openPanel",
+      "type": "function",
+      "name": "openPanel(p)",
+      "summary": "打开右侧航天HUD风格详情面板。接收行星数据对象，动态渲染HTML：行星名中英文、概述、地质描述、统计网格。面板通过CSS transition从右侧滑入（right: -380px → 16px）。",
+      "tags": ["ui", "panel", "detail-view"],
+      "complexity": "simple",
+      "domains": ["presentation", "interaction"]
+    },
+    {
+      "id": "function:src/overview.js:handleClick",
+      "type": "function",
+      "name": "handleClick(e)",
+      "summary": "鼠标点击处理函数。通过Raycaster射线检测点击的行星，命中则调用 openPanel 打开详情面板。太阳也包含在可点击范围内（SUN_DATA对象）。",
+      "tags": ["interaction", "raycaster", "click"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "interaction"]
+    },
+    {
+      "id": "function:src/overview.js:getRayHit",
+      "type": "function",
+      "name": "getRayHit(clientX, clientY)",
+      "summary": "射线命中检测。将屏幕坐标归一化为NDC，从相机发射Raycaster，检测与所有天体网格（太阳+8行星）的交点。返回对应的行星数据或SUN_DATA。",
+      "tags": ["raycaster", "hit-detection", "interaction"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "interaction"]
+    },
+    {
+      "id": "function:src/overview.js:drawLabels",
+      "type": "function",
+      "name": "drawLabels()",
+      "summary": "2D标签覆盖层绘制。在透明Canvas上投影每个行星的3D世界坐标到屏幕空间，绘制点+中文名标签。面板打开时隐藏标签避免遮挡。每帧调用。",
+      "tags": ["canvas-2d", "labels", "overlay"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "rendering"]
+    },
+    {
+      "id": "function:src/overview.js:animate",
+      "type": "function",
+      "name": "animate(ts)",
+      "summary": "主渲染循环。每帧执行：FPS计数、平滑相机距离插值、平滑lookAt目标跟随（放大模式跟行星）、自动旋转（0.0003 rad/帧）、相机轨道定位、太阳光晕脉动、行星自转公转更新、表面动画层驱动、彗星更新、星场旋转、标签绘制、渲染器render。",
+      "tags": ["animation-loop", "main-loop", "core"],
+      "complexity": "complex",
+      "domains": ["overview-engine", "animation", "rendering"]
+    },
+    {
+      "id": "function:src/overview.js:updateComet",
+      "type": "function",
+      "name": "updateComet(c, frame)",
+      "summary": "彗星椭圆轨道更新函数。基于开普勒轨道参数（半长轴a、偏心率e、倾角、相位）计算真近点角并更新彗星头和尾迹。尾部维持60个历史位置形成渐隐效果，靠近太阳时尾部加亮。",
+      "tags": ["comet", "orbital-mechanics", "animation"],
+      "complexity": "medium",
+      "domains": ["overview-engine", "animation"]
+    },
+    {
+      "id": "function:src/zoom.js:zoomToPlanet",
+      "type": "function",
+      "name": "zoomToPlanet(p)",
+      "summary": "双击放大核心函数。执行：清理旧表面动画层、保存当前行星材质(prevPhongMat)、切换到真实纹理（或保留程序化）、根据行星类型添加专属3D表面层（太阳：日冕弧、金星：雾霾壳、地球：云层壳、火星：尘雾+极冠、木星：大红斑、土星：雾壳、天王星/海王星：半透明风暴层）、设置相机目标距离为行星半径×5、打开左侧特征科普面板。",
+      "tags": ["zoom", "double-click", "texture-switch", "surface-layers"],
+      "complexity": "complex",
+      "domains": ["zoom-engine", "interaction", "rendering"]
+    },
+    {
+      "id": "function:src/zoom.js:zoomOut",
+      "type": "function",
+      "name": "zoomOut()",
+      "summary": "退出放大模式。清理所有表面动画层、恢复原始Phong材质(dispose临时材质)、重置相机目标距离为220、lookAt目标归零、关闭左侧特征面板。",
+      "tags": ["zoom", "restore", "cleanup"],
+      "complexity": "medium",
+      "domains": ["zoom-engine", "interaction"]
+    },
+    {
+      "id": "function:src/zoom.js:openFeaturePanel",
+      "type": "function",
+      "name": "openFeaturePanel(p)",
+      "summary": "打开左侧特征科普面板。根据行星英文名查找FEATURE_DATA，动态生成带48x48 Canvas插画的特征卡片（每行星3-4个科学知识点），调用drawFeatureIllo绘制小图标，面板从左侧滑入。",
+      "tags": ["ui", "feature-panel", "science", "canvas-illustration"],
+      "complexity": "medium",
+      "domains": ["zoom-engine", "presentation", "science-data"]
+    },
+    {
+      "id": "function:src/zoom.js:drawFeatureIllo",
+      "type": "function",
+      "name": "drawFeatureIllo(featureKey)",
+      "summary": "科学特征插画绘制函数。根据featureKey返回48x48 Canvas，内部分支配每种特征的像素画绘制逻辑（太阳黑子/米粒组织/日冕/日珥、卡洛里斯盆地/悬崖、盾形火山/温室效应/镶嵌地形、大陆海洋/大气层/月球、奥林匹斯山/水手号峡谷/极地冰盖、大红斑/云带/伽利略卫星、光环/六边形风暴/泰坦、轴倾斜/暗淡光环/天卫五、大暗斑/超音速风暴/海卫一 等共25+种）。全部离屏Canvas即时绘制。",
+      "tags": ["illustration", "canvas", "procedural-drawing", "science-art"],
+      "complexity": "complex",
+      "domains": ["zoom-engine", "presentation", "science-data"]
+    },
+    {
+      "id": "function:src/zoom.js:closeFeaturePanel",
+      "type": "function",
+      "name": "closeFeaturePanel()",
+      "summary": "关闭左侧特征科普面板，通过移除CSS .open类实现滑出动画。",
+      "tags": ["ui", "panel-close"],
+      "complexity": "simple",
+      "domains": ["zoom-engine", "presentation"]
+    },
+    {
+      "id": "function:src/overview.js:makeStars",
+      "type": "function",
+      "name": "makeStars(count, spread, size, opacity)",
+      "summary": "星场点云生成器。创建随机分布的三维点集作为THREE.Points，使用PointsMaterial实现大小恒定（sizeAttenuation:false）的星空。返回两层：12k近星+4k远星，实现视差深度效果。",
+      "tags": ["starfield", "points", "background"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "rendering"]
+    },
+    {
+      "id": "function:src/overview.js:resizeAll",
+      "type": "function",
+      "name": "resizeAll()",
+      "summary": "响应式尺寸更新。更新相机宽高比和投影矩阵、渲染器尺寸、标签Canvas尺寸。绑定到window.resize事件。",
+      "tags": ["resize", "responsive"],
+      "complexity": "simple",
+      "domains": ["overview-engine", "rendering"]
+    },
+    {
+      "id": "concept:procedural-textures",
+      "type": "concept",
+      "name": "程序化纹理系统",
+      "summary": "基于Canvas离屏渲染和FBM噪声的行星纹理生成管线。涵盖太阳（对流胞+临边昏暗+日冕）、水星（陨击坑灰色岩石）、金星（硫酸云带）、地球（海洋/大陆/冰盖/云层）、火星（锈色沙丘+极地冰盖+水手号峡谷）、木星（条带大气+大红斑）、土星（淡色条带）、天王星（朦胧蓝绿雾）、海王星（深蓝+风暴斑）。所有纹理512x512（天王星256），无需外部图片。",
+      "tags": ["procedural-generation", "texture", "fbm", "canvas"],
+      "complexity": "complex",
+      "domains": ["overview-engine", "procedural-generation"]
+    },
+    {
+      "id": "concept:surface-animation-layers",
+      "type": "concept",
+      "name": "表面动画层系统",
+      "summary": "放大模式下的行星表面动态叠加层。zoom.js 与 overview.js 动画循环协作：zoom.js 创建透明叠加网格（日冕弧、云壳、雾壳、大红斑等），添加到 zoomedPlanet.mesh 中；overview.js 的 surfaceAnimLayers 数组在 animate() 中每帧驱动旋转、脉冲、闪光效果。支持三种动画类型：rotate（自转），pulse（缩放呼吸），flare（旋转+透明度闪烁）。",
+      "tags": ["animation", "surface-layer", "zoom-mode"],
+      "complexity": "medium",
+      "domains": ["zoom-engine", "overview-engine", "animation"]
+    },
+    {
+      "id": "concept:planets-dataset",
+      "type": "concept",
+      "name": "行星数据集 PLANETS",
+      "summary": "存储在 overview.js 中的8大行星完整数据数组。每项含：中英文名、半径、轨道半径、纹理、公转速度、轴向倾斜、标语、详细描述、地质信息、6项统计卡数据。供3D构建和面板渲染使用。太阳另存为 SUN_DATA 对象。",
+      "tags": ["data", "planet-data", "science"],
+      "complexity": "medium",
+      "domains": ["overview-engine", "science-data"]
+    },
+    {
+      "id": "concept:feature-data",
+      "type": "concept",
+      "name": "科普知识库 FEATURE_DATA",
+      "summary": "存储在 zoom.js 中的行星科学特征数据集。按行星英文名索引，每个行星含3-4个知识点，每个知识点含：key（插画标识）、title（中英混合标题）、desc（详细科普描述，80-150字）。涵盖太阳黑子、米粒组织、日冕、日珥、卡洛里斯盆地、陨击地貌、盾形火山、温室效应、大陆海洋、大气层、月球、奥林匹斯山、水手号峡谷、极地冰盖、大红斑、云带结构、伽利略卫星、光环系统、六边形风暴、泰坦、极端轴倾斜、暗淡光环、天卫五、大暗斑、超音速风暴、海卫一 等25+知识点。",
+      "tags": ["data", "science-content", "feature"],
+      "complexity": "large",
+      "domains": ["zoom-engine", "science-data"]
+    },
+    {
+      "id": "concept:comet-system",
+      "type": "concept",
+      "name": "彗星椭圆轨道系统",
+      "summary": "3颗彗星的动态椭圆轨道系统。每颗彗星有随机半长轴、偏心率、倾角，遵循开普勒轨道力学计算真近点角。头部为白色小球，尾部维持60点历史位置数组形成渐隐尾迹。尾部透明度随距太阳距离动态变化（靠近更亮）。用于增强场景动态感和天文真实感。",
+      "tags": ["comet", "orbital-mechanics", "dynamic"],
+      "complexity": "medium",
+      "domains": ["overview-engine", "animation"]
+    },
+    {
+      "id": "concept:neural-signal-propagation",
+      "type": "concept",
+      "name": "神经网络信号传播动画",
+      "summary": "在两个神经网络可视化页面中的核心动画机制。3D版：激活一层节点→按概率沿边缘发射信号粒子（球体+拖尾）→粒子到达目标节点触发激活脉冲→节点光晕扩张收缩→边缘线条亮度随之变化。2D版：同样机制但使用Canvas绘制，信号粒子带颜色HSL和拖尾。均配合逐层波传播（fireWave/fireLayer）和随机噪音爆发（setInterval）。",
+      "tags": ["neural-network", "animation", "signal-propagation", "wave"],
+      "complexity": "medium",
+      "domains": ["neural-network-viz"]
+    },
+    {
+      "id": "concept:hud-design-system",
+      "type": "concept",
+      "name": "航天HUD界面设计系统",
+      "summary": "solar-system.html 中定义的统一视觉语言：毛玻璃面板（backdrop-filter: blur）+ 渐变半透明背景 + 蓝绿边框高亮 + 扫描线覆盖层（repeating-linear-gradient）+ 呼吸状态点动画（blink）+ 角落缺口装饰（::before伪元素）+ 等宽字体 Courier New + 低饱和度蓝绿荧光色系（rgba(0,200,180,x)系列）。右侧详情面板和左侧特征面板共享此设计语言。",
+      "tags": ["ui-design", "hud", "css", "glassmorphism"],
+      "complexity": "medium",
+      "domains": ["presentation", "ui"]
+    }
+  ],
+
+  "edges": [
+    {"source": "file:solar-system.html", "target": "file:libs/three.min.js", "type": "imports", "weight": 0.9, "label": "script src 本地加载"},
+    {"source": "file:solar-system.html", "target": "file:src/overview.js", "type": "imports", "weight": 0.95, "label": "script src 全景引擎"},
+    {"source": "file:solar-system.html", "target": "file:src/zoom.js", "type": "imports", "weight": 0.85, "label": "script src 放大引擎"},
+    {"source": "file:src/zoom.js", "target": "file:src/overview.js", "type": "depends_on", "weight": 0.9, "label": "依赖 overview.js 中的 scene/camera/PLANETS/SUN_DATA/surfaceAnimLayers/ZOOM_DIST_FACTOR/fbm 等全局变量"},
+    {"source": "file:src/overview.js", "target": "file:libs/three.min.js", "type": "depends_on", "weight": 1.0, "label": "依赖 THREE 全局命名空间"},
+    {"source": "file:src/zoom.js", "target": "file:libs/three.min.js", "type": "depends_on", "weight": 1.0, "label": "依赖 THREE.TextureLoader/THREE.MeshBasicMaterial 等"},
+    {"source": "function:src/overview.js:fbm", "target": "function:src/overview.js:vnoise", "type": "calls", "weight": 1.0, "label": "多次调用 vnoise 叠加倍频程"},
+    {"source": "function:src/overview.js:makeTexture", "target": "concept:procedural-textures", "type": "creates", "weight": 0.9, "label": "生成所有程序化行星纹理"},
+    {"source": "concept:procedural-textures", "target": "function:src/overview.js:fbm", "type": "uses", "weight": 0.95, "label": "所有行星纹理依赖FBM噪声"},
+    {"source": "function:src/overview.js:animate", "target": "concept:surface-animation-layers", "type": "drives", "weight": 0.9, "label": "每帧驱动 surfaceAnimLayers 动画"},
+    {"source": "function:src/zoom.js:zoomToPlanet", "target": "concept:surface-animation-layers", "type": "populates", "weight": 0.95, "label": "创建表面动画层并推入 surfaceAnimLayers"},
+    {"source": "function:src/zoom.js:zoomOut", "target": "concept:surface-animation-layers", "type": "cleans", "weight": 0.8, "label": "清空 surfaceAnimLayers"},
+    {"source": "function:src/overview.js:openPanel", "target": "concept:planets-dataset", "type": "reads", "weight": 0.85, "label": "读取行星数据渲染详情面板"},
+    {"source": "function:src/zoom.js:openFeaturePanel", "target": "concept:feature-data", "type": "reads", "weight": 0.95, "label": "读取FEATURE_DATA渲染科普面板"},
+    {"source": "function:src/zoom.js:openFeaturePanel", "target": "function:src/zoom.js:drawFeatureIllo", "type": "calls", "weight": 0.9, "label": "为每个特征绘制插画"},
+    {"source": "function:src/overview.js:handleClick", "target": "function:src/overview.js:getRayHit", "type": "calls", "weight": 1.0, "label": "射线检测命中"},
+    {"source": "function:src/overview.js:handleClick", "target": "function:src/overview.js:openPanel", "type": "calls", "weight": 1.0, "label": "命中后打开面板"},
+    {"source": "function:src/overview.js:animate", "target": "function:src/overview.js:updateComet", "type": "calls", "weight": 0.8, "label": "每帧更新彗星"},
+    {"source": "function:src/overview.js:animate", "target": "function:src/overview.js:drawLabels", "type": "calls", "weight": 0.8, "label": "每帧绘制标签"},
+    {"source": "function:src/overview.js:animate", "target": "concept:comet-system", "type": "drives", "weight": 0.9, "label": "驱动彗星轨道运动"},
+    {"source": "file:src/overview.js", "target": "concept:hud-design-system", "type": "interacts_with", "weight": 0.6, "label": "通过 openPanel 渲染符合HUD设计语言的HTML"},
+    {"source": "file:src/zoom.js", "target": "concept:hud-design-system", "type": "interacts_with", "weight": 0.6, "label": "通过 openFeaturePanel 渲染符合HUD设计语言的特征卡片"},
+    {"source": "file:solar-system.html", "target": "concept:hud-design-system", "type": "defines", "weight": 0.95, "label": "定义所有CSS HUD样式变量和组件"},
+    {"source": "file:neural-network-3d.html", "target": "concept:neural-signal-propagation", "type": "implements", "weight": 0.9, "label": "3D版本实现——Three.js 节点+边缘+信号球体传播"},
+    {"source": "file:neural-network-viz.html", "target": "concept:neural-signal-propagation", "type": "implements", "weight": 0.9, "label": "2D版本实现——Canvas 节点+边缘+信号拖尾绘制"},
+    {"source": "function:src/zoom.js:zoomToPlanet", "target": "function:src/zoom.js:openFeaturePanel", "type": "calls", "weight": 0.9, "label": "放大后打开左侧科普面板"},
+    {"source": "function:src/zoom.js:zoomOut", "target": "function:src/zoom.js:closeFeaturePanel", "type": "calls", "weight": 0.9, "label": "退出放大时关闭科普面板"},
+    {"source": "file:solar-system.html", "target": "function:src/zoom.js:zoomToPlanet", "type": "triggers", "weight": 0.8, "label": "dblclick 事件绑定 → zoomToPlanet"},
+    {"source": "file:solar-system.html", "target": "function:src/zoom.js:zoomOut", "type": "triggers", "weight": 0.8, "label": "dblclick 空白区域 → zoomOut"},
+    {"source": "concept:planets-dataset", "target": "function:src/zoom.js:zoomToPlanet", "type": "provides", "weight": 0.7, "label": "行星数据决定 zoomToPlanet 的表面层逻辑"},
+    {"source": "function:src/overview.js:makeGlowSprite", "target": "concept:procedural-textures", "type": "related_to", "weight": 0.5, "label": "同为Canvas→Three.js纹理生成模式"},
+    {"source": "function:src/overview.js:makeStars", "target": "file:src/overview.js", "type": "defined_in", "weight": 1.0, "label": ""},
+    {"source": "function:src/overview.js:resizeAll", "target": "file:src/overview.js", "type": "defined_in", "weight": 1.0, "label": ""},
+    {"source": "file:neural-network-3d.html", "target": "concept:neural-signal-propagation", "type": "implements", "weight": 0.85, "label": "3D信号传播：激活层→发射粒子→目标节点脉冲"},
+    {"source": "file:neural-network-viz.html", "target": "concept:neural-signal-propagation", "type": "implements", "weight": 0.85, "label": "2D信号传播：Canvas绘制信号粒子拖尾"}
+  ],
+
+  "layers": [
+    {
+      "id": "layer:presentation",
+      "name": "展示层",
+      "description": "用户直接交互的界面层，包含HTML结构、CSS样式系统、HUD设计语言、面板组件和标签覆盖层",
+      "nodeIds": [
+        "file:solar-system.html",
+        "concept:hud-design-system",
+        "function:src/overview.js:openPanel",
+        "function:src/overview.js:drawLabels",
+        "function:src/zoom.js:openFeaturePanel",
+        "function:src/zoom.js:closeFeaturePanel",
+        "function:src/zoom.js:drawFeatureIllo",
+        "function:src/overview.js:resizeAll"
+      ]
+    },
+    {
+      "id": "layer:overview-engine",
+      "name": "全景引擎",
+      "description": "太阳系3D场景的全景模式核心逻辑——场景初始化、程序化纹理生成、行星构建、轨道系统、动画循环、交互处理",
+      "nodeIds": [
+        "file:src/overview.js",
+        "function:src/overview.js:fbm",
+        "function:src/overview.js:vnoise",
+        "function:src/overview.js:makeTexture",
+        "function:src/overview.js:noiseTexture",
+        "function:src/overview.js:makeGlowSprite",
+        "function:src/overview.js:makeStars",
+        "function:src/overview.js:animate",
+        "function:src/overview.js:handleClick",
+        "function:src/overview.js:getRayHit",
+        "function:src/overview.js:updateComet",
+        "concept:procedural-textures",
+        "concept:planets-dataset",
+        "concept:comet-system"
+      ]
+    },
+    {
+      "id": "layer:zoom-engine",
+      "name": "放大引擎",
+      "description": "双击放大的行星特写模式——真实纹理加载切换、表面动画层叠加、科学特征面板与知识库",
+      "nodeIds": [
+        "file:src/zoom.js",
+        "function:src/zoom.js:zoomToPlanet",
+        "function:src/zoom.js:zoomOut",
+        "function:src/zoom.js:openFeaturePanel",
+        "function:src/zoom.js:drawFeatureIllo",
+        "concept:surface-animation-layers",
+        "concept:feature-data"
+      ]
+    },
+    {
+      "id": "layer:vendor",
+      "name": "第三方库",
+      "description": "外部依赖库层——Three.js r128 3D渲染引擎",
+      "nodeIds": [
+        "file:libs/three.min.js"
+      ]
+    },
+    {
+      "id": "layer:neural-network",
+      "name": "神经网络可视化",
+      "description": "独立的神经网络可视化页面——3D Three.js 版本和 2D Canvas 版本，共享信号传播动画概念",
+      "nodeIds": [
+        "file:neural-network-3d.html",
+        "file:neural-network-viz.html",
+        "concept:neural-signal-propagation"
+      ]
+    }
+  ],
+
+  "tour": [
+    {
+      "step": 1,
+      "title": "入口与全局架构",
+      "content": "项目 monday 包含两个独立子系统：太阳系3D星图（solar-system.html + overview.js + zoom.js）和神经网络可视化（两个独立HTML页面）。太阳系是主系统，入口为 solar-system.html，它加载本地 Three.js 库和两个JS引擎文件。神经网络页面各自独立运行，3D版引用CDN Three.js，2D版纯Canvas实现。",
+      "nodeIds": [
+        "file:solar-system.html",
+        "file:src/overview.js",
+        "file:src/zoom.js",
+        "file:libs/three.min.js",
+        "file:neural-network-3d.html",
+        "file:neural-network-viz.html"
+      ]
+    },
+    {
+      "step": 2,
+      "title": "全景引擎：场景与纹理",
+      "content": "overview.js 是太阳系全景模式的核心。它初始化 Three.js 场景（雾效、ACES色调映射）、构建程序化纹理管线（基于 FBM 分形布朗运动的 Canvas 噪声纹理生成，无需外部图片），并创建8大行星+太阳的完整轨道系统。每个行星通过 Object3D 枢轴实现公转，带轨道环、自转倾斜、以及土星的渐变光环和地球的月球+大气光晕。",
+      "nodeIds": [
+        "file:src/overview.js",
+        "concept:procedural-textures",
+        "function:src/overview.js:fbm",
+        "function:src/overview.js:vnoise",
+        "function:src/overview.js:makeTexture",
+        "concept:planets-dataset"
+      ]
+    },
+    {
+      "step": 3,
+      "title": "放大模式与表面动画",
+      "content": "双击行星触发 zoom.js 的 zoomToPlanet 函数，切换到维基媒体真实纹理（预加载），并添加行星专属的3D表面动画层：太阳的日冕弧、金星的黄色雾霾、地球的动态云层、火星的尘雾+极冠、木星的大红斑脉冲、土星和海王星的半透明风暴壳等。这些动画层由 overview.js 的 animate() 循环每帧驱动（rotate/pulse/flare）。左侧弹出特征科普面板，展示每个行星3-4个科学知识点和48x48手绘插画。双击空白处 zoomOut 恢复全景。",
+      "nodeIds": [
+        "file:src/zoom.js",
+        "function:src/zoom.js:zoomToPlanet",
+        "function:src/zoom.js:zoomOut",
+        "function:src/zoom.js:openFeaturePanel",
+        "function:src/zoom.js:drawFeatureIllo",
+        "concept:surface-animation-layers",
+        "concept:feature-data"
+      ]
+    },
+    {
+      "step": 4,
+      "title": "神经网络可视化子系统",
+      "content": "两个独立页面分别用 Three.js 3D 和 Canvas 2D 实现神经网络前馈信号传播动画。网络结构相同（4-6-8-6-4-2），动画机制一致：逐层波推进激活→沿边发射飞行信号粒子→到达目标节点触发脉冲→边缘亮度随激活变化。3D版有节点3D空间分布、鼠标旋转缩放；2D版有粒子背景场、层标签。两者都包含随机噪音爆发和「思维词条」（ANALYZING/LEARNING/GRADIENT等）闪现效果。",
+      "nodeIds": [
+        "file:neural-network-3d.html",
+        "file:neural-network-viz.html",
+        "concept:neural-signal-propagation"
+      ]
+    }
+  ]
+}
