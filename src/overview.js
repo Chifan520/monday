@@ -1,6 +1,6 @@
 // ── Renderer / Scene / Camera ─────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000008, 0.0018);
+scene.fog = new THREE.FogExp2(0x000008, 0.0012);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 8000);
 camera.position.set(0, 80, 220);
@@ -459,17 +459,42 @@ const SPEED_SCALE = 0.0012; // very slow — grand, majestic feel
 const planetMeshes = [];
 
 PLANETS.forEach(p => {
-  // Orbit ring
+  // Orbit ring — 3-layer HUD navigation system (all parented to pivot for correct tilt)
+  // Layer 1: base ring (subtle, fog-immune)
   const orbitGeo = new THREE.RingGeometry(p.orbit - 0.06, p.orbit + 0.06, 180);
-  const orbitMat = new THREE.MeshBasicMaterial({ color: 0x2a3a5a, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+  const orbitMat = new THREE.MeshBasicMaterial({ color: 0x0e3040, transparent: true, opacity: 0.22, side: THREE.DoubleSide, fog: false });
   const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
   orbitRing.rotation.x = Math.PI / 2;
-  scene.add(orbitRing);
+  // Layer 2: additive glow ring (thin cyan neon — matches HUD palette)
+  const glowGeo = new THREE.RingGeometry(p.orbit - 0.02, p.orbit + 0.02, 180);
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0x00c8b4, transparent: true, opacity: 0.40, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+  const glowRing = new THREE.Mesh(glowGeo, glowMat);
+  glowRing.rotation.x = Math.PI / 2;
+  // Layer 3: navigation waypoints (sparse dots around orbit)
+  const dotCount = 72;
+  const dotPositions = new Float32Array(dotCount * 3);
+  for (let di = 0; di < dotCount; di++) {
+    const angle = (di / dotCount) * Math.PI * 2;
+    dotPositions[di * 3] = Math.cos(angle) * p.orbit;
+    dotPositions[di * 3 + 1] = 0;
+    dotPositions[di * 3 + 2] = Math.sin(angle) * p.orbit;
+  }
+  const dotGeo = new THREE.BufferGeometry();
+  dotGeo.setAttribute('position', new THREE.BufferAttribute(dotPositions, 3));
+  const dotMat = new THREE.PointsMaterial({ color: 0x009080, size: 0.18, sizeAttenuation: true, transparent: true, opacity: 0.30, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  const orbitDots = new THREE.Points(dotGeo, dotMat);
+  // Store refs
+  p.orbitRing = orbitRing; p.orbitGlow = glowRing; p.orbitDots = orbitDots;
 
   // Pivot for orbit
   const pivot = new THREE.Object3D();
   pivot.rotation.x = (Math.random() - 0.5) * 0.18;
   scene.add(pivot);
+
+  // Parent all orbit layers to pivot (inherits tilt — fixes trajectory alignment)
+  pivot.add(orbitRing);
+  pivot.add(glowRing);
+  pivot.add(orbitDots);
 
   // Planet
   const mesh = new THREE.Mesh(
