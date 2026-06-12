@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Neural Network Thinking</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #050510; overflow: hidden; font-family: 'Courier New', monospace; color: #00ffcc; }
+canvas { position: fixed; top: 0; left: 0; }
+#ui {
+  position: fixed; top: 20px; left: 20px; z-index: 10;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.layer-label {
+  font-size: 11px; letter-spacing: 2px; opacity: 0.6;
+  text-transform: uppercase;
+}
+#info {
+  position: fixed; bottom: 20px; right: 20px; z-index: 10;
+  text-align: right; font-size: 11px; opacity: 0.4; letter-spacing: 1px;
+}
+#thought {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 10; font-size: 13px; letter-spacing: 3px; opacity: 0;
+  text-align: center; pointer-events: none; text-transform: uppercase;
+  text-shadow: 0 0 20px #00ffcc;
+  transition: opacity 0.5s;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="thought"></div>
+<div id="info">
+  NEURAL ACTIVITY<br>
+  <span id="fps">0</span> FPS &nbsp;|&nbsp; <span id="active">0</span> ACTIVE
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Particles (background field) ─────────────────────────────────────────────
+const PARTICLE_COUNT = 200;
+const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+  x: Math.random() * 1920,
+  y: Math.random() * 1080,
+  vx: (Math.random() - 0.5) * 0.3,
+  vy: (Math.random() - 0.5) * 0.3,
+  r: Math.random() * 1.5 + 0.3,
+  alpha: Math.random() * 0.4 + 0.1,
+}));
+
+// ── Neural network layers ─────────────────────────────────────────────────────
+const LAYER_DEFS = [4, 6, 8, 6, 4, 2]; // neurons per layer
+const LAYER_NAMES = ['INPUT', 'HIDDEN 1', 'HIDDEN 2', 'HIDDEN 3', 'HIDDEN 4', 'OUTPUT'];
+
+let nodes = [];   // { x, y, layer, idx, act, pulse }
+let edges = [];   // { a, b, w, signal }
+let signals = []; // flying signals: { x, y, tx, ty, progress, color, width }
+
+function buildNetwork() {
+  nodes = [];
+  edges = [];
+  const marginX = W * 0.12;
+  const usableW = W - marginX * 2;
+  const layerX = (i) => marginX + (usableW / (LAYER_DEFS.length - 1)) * i;
+
+  LAYER_DEFS.forEach((count, li) => {
+    const startY = H / 2 - ((count - 1) * 70) / 2;
+    for (let ni = 0; ni < count; ni++) {
+      nodes.push({ x: layerX(li), y: startY + ni * 70, layer: li, idx: ni, act: 0, pulse: 0 });
+    }
+  });
+
+  // Connect each layer to the next
+  for (let li = 0; li < LAYER_DEFS.length - 1; li++) {
+    const aNodes = nodes.filter(n => n.layer === li);
+    const bNodes = nodes.filter(n => n.layer === li + 1);
+    aNodes.forEach(a => {
+      bNodes.forEach(b => {
+        edges.push({ a, b, w: Math.random() * 0.8 + 0.1, signal: null });
+      });
+    });
+  }
+}
+buildNetwork();
+window.addEventListener('resize', buildNetwork);
+
+// ── Activation wave ───────────────────────────────────────────────────────────
+let waveTimer = 0;
+const WAVE_INTERVAL = 90; // frames
+
+function fireWave(layerIdx) {
+  const layerNodes = nodes.filter(n => n.layer === layerIdx);
+  layerNodes.forEach(n => {
+    n.act = 1;
+    n.pulse = 1;
+    // fire signals along outgoing edges
+    if (layerIdx < LAYER_DEFS.length - 1) {
+      edges.filter(e => e.a === n).forEach(e => {
+        if (Math.random() < e.w + 0.2) {
+          signals.push({
+            sx: e.a.x, sy: e.a.y,
+            tx: e.b.x, ty: e.b.y,
+            progress: 0,
+            speed: 0.008 + Math.random() * 0.012,
+            edge: e,
+            color: `hsl(${170 + Math.random() * 60}, 100%, 70%)`,
+            width: Math.random() * 1.5 + 0.5,
+          });
+        }
+      });
+    }
+  });
+}
+
+// ── Thought words ─────────────────────────────────────────────────────────────
+const THOUGHTS = ['ANALYZING...', 'PATTERN FOUND', 'COMPUTING', 'LEARNING', 'OPTIMIZING', 'INFERENCE', 'BACKPROP', 'GRADIENT'];
+const thoughtEl = document.getElementById('thought');
+let thoughtTimer = 0;
+
+function showThought() {
+  thoughtEl.textContent = THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)];
+  thoughtEl.style.opacity = '1';
+  setTimeout(() => { thoughtEl.style.opacity = '0'; }, 1200);
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────────────
+function drawParticles() {
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,255,204,${p.alpha})`;
+    ctx.fill();
+  });
+}
+
+function drawEdges() {
+  edges.forEach(e => {
+    ctx.beginPath();
+    ctx.moveTo(e.a.x, e.a.y);
+    ctx.lineTo(e.b.x, e.b.y);
+    const act = (e.a.act + e.b.act) / 2;
+    ctx.strokeStyle = `rgba(0,180,150,${0.04 + act * 0.15})`;
+    ctx.lineWidth = 0.5 + act * 0.5;
+    ctx.stroke();
+  });
+}
+
+function drawNodes() {
+  nodes.forEach(n => {
+    n.act *= 0.96;
+    n.pulse *= 0.94;
+
+    // Glow
+    if (n.act > 0.05) {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 30 + n.pulse * 20);
+      g.addColorStop(0, `rgba(0,255,200,${n.act * 0.4})`);
+      g.addColorStop(1, 'rgba(0,255,200,0)');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 30 + n.pulse * 20, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 6 + n.pulse * 4, 0, Math.PI * 2);
+    const brightness = 40 + n.act * 60;
+    ctx.fillStyle = `hsl(170, 100%, ${brightness}%)`;
+    ctx.fill();
+
+    // Ring
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 10 + n.pulse * 6, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,255,200,${0.3 + n.act * 0.5})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+}
+
+function drawSignals() {
+  signals = signals.filter(s => s.progress < 1);
+  signals.forEach(s => {
+    s.progress += s.speed;
+    const x = s.sx + (s.tx - s.sx) * s.progress;
+    const y = s.sy + (s.ty - s.sy) * s.progress;
+
+    // Activate destination when signal arrives
+    if (s.progress > 0.95) {
+      s.edge.b.act = Math.min(1, s.edge.b.act + 0.6);
+      s.edge.b.pulse = 1;
+    }
+
+    // Trail
+    for (let t = 0; t < 5; t++) {
+      const tp = Math.max(0, s.progress - t * 0.03);
+      const tx = s.sx + (s.tx - s.sx) * tp;
+      const ty = s.sy + (s.ty - s.sy) * tp;
+      ctx.beginPath();
+      ctx.arc(tx, ty, s.width * (1 - t * 0.15), 0, Math.PI * 2);
+      ctx.fillStyle = s.color.replace(')', `,${0.9 - t * 0.18})`).replace('hsl(', 'hsla(');
+      ctx.fill();
+    }
+  });
+}
+
+function drawLayerLabels() {
+  LAYER_DEFS.forEach((_, li) => {
+    const x = nodes.find(n => n.layer === li).x;
+    ctx.fillStyle = 'rgba(0,255,200,0.25)';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '2px';
+    ctx.fillText(LAYER_NAMES[li], x, H * 0.15);
+  });
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let frame = 0, lastFps = 0, fps = 0;
+const fpsEl = document.getElementById('fps');
+const activeEl = document.getElementById('active');
+
+function loop(ts) {
+  requestAnimationFrame(loop);
+
+  // FPS
+  fps++;
+  if (ts - lastFps >= 1000) { fpsEl.textContent = fps; fps = 0; lastFps = ts; }
+
+  ctx.fillStyle = 'rgba(5,5,16,0.35)';
+  ctx.fillRect(0, 0, W, H);
+
+  drawParticles();
+  drawEdges();
+  drawSignals();
+  drawNodes();
+  drawLayerLabels();
+
+  // Wave propagation
+  waveTimer++;
+  if (waveTimer >= WAVE_INTERVAL) {
+    waveTimer = 0;
+    fireWave(0); // Start from input layer
+  }
+
+  // Show thought text
+  thoughtTimer++;
+  if (thoughtTimer > 180) { thoughtTimer = 0; showThought(); }
+
+  activeEl.textContent = signals.length;
+  frame++;
+}
+
+// Random noise bursts
+setInterval(() => {
+  const li = Math.floor(Math.random() * LAYER_DEFS.length);
+  fireWave(li);
+}, 3000);
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

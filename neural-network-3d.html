@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Neural Network 3D</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #050510; overflow: hidden; font-family: 'Courier New', monospace; }
+#hud {
+  position: fixed; bottom: 20px; right: 20px;
+  color: rgba(0,255,200,0.4); font-size: 11px;
+  letter-spacing: 2px; text-align: right; pointer-events: none;
+}
+#thought {
+  position: fixed; top: 45%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #00ffcc; font-size: 14px; letter-spacing: 5px;
+  text-transform: uppercase; opacity: 0;
+  text-shadow: 0 0 30px #00ffcc, 0 0 80px #006655;
+  transition: opacity 0.5s; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="thought"></div>
+<div id="hud">
+  NEURAL NETWORK · 3D<br>
+  <span id="fps">0</span> FPS &nbsp;|&nbsp; <span id="sig">0</span> SIGNALS<br>
+  <small style="opacity:0.5">drag to rotate · scroll to zoom</small>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── Scene ────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050510, 0.025);
+scene.background = new THREE.Color(0x050510);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 300);
+camera.position.set(0, 4, 32);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ─── Lights ───────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x0a1a2a, 3));
+const pulseLight = new THREE.PointLight(0x00ffcc, 2, 80);
+scene.add(pulseLight);
+
+// ─── Network layout ───────────────────────────────────────────────────────────
+const LAYERS = [4, 6, 8, 6, 4, 2];
+const LX = 7;   // layer x-spacing
+const NY = 2.6; // node y-spacing
+const NZ = 2.6; // node z-spacing (3D spread)
+
+const nodeData = []; // { mesh, glow, layer, act, pulseT }
+const edgeList = []; // { line, a, b }
+const signals  = []; // { mesh, trail[], a, b, t, speed }
+
+// Node geometry / material
+const nodeGeo = new THREE.SphereGeometry(0.28, 16, 16);
+
+function makeMat(col, emissive) {
+  return new THREE.MeshPhongMaterial({ color: col, emissive, transparent: true, opacity: 0.95 });
+}
+
+// Build nodes
+LAYERS.forEach((count, li) => {
+  const rows = Math.ceil(Math.sqrt(count));
+  let idx = 0;
+  for (let row = 0; row < rows && idx < count; row++) {
+    for (let col = 0; col < rows && idx < count; col++, idx++) {
+      const cx = (li - (LAYERS.length - 1) / 2) * LX;
+      const cy = (row - (rows - 1) / 2) * NY;
+      const cz = (col - (rows - 1) / 2) * NZ;
+
+      const mesh = new THREE.Mesh(nodeGeo, makeMat(0x00ffcc, 0x003322));
+      mesh.position.set(cx, cy, cz);
+      scene.add(mesh);
+
+      // Glow sprite
+      const glowGeo = new THREE.SphereGeometry(0.8, 8, 8);
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0, depthWrite: false });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      mesh.add(glow);
+
+      nodeData.push({ mesh, glow, layer: li, act: 0, pulseT: 0 });
+    }
+  }
+});
+
+// Build edges (connect adjacent layers)
+function nodesInLayer(li) { return nodeData.filter(n => n.layer === li); }
+
+for (let li = 0; li < LAYERS.length - 1; li++) {
+  const aNodes = nodesInLayer(li);
+  const bNodes = nodesInLayer(li + 1);
+  aNodes.forEach(a => {
+    bNodes.forEach(b => {
+      if (Math.random() > 0.15) { // sparse connections look better in 3D
+        const pts = [a.mesh.position.clone(), b.mesh.position.clone()];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0x00aa88, transparent: true, opacity: 0.07 });
+        const line = new THREE.Line(geo, mat);
+        scene.add(line);
+        edgeList.push({ line, a, b });
+      }
+    });
+  });
+}
+
+// ─── Background particles ─────────────────────────────────────────────────────
+const PCNT = 600;
+const pGeo = new THREE.BufferGeometry();
+const pPos = new Float32Array(PCNT * 3);
+for (let i = 0; i < PCNT * 3; i++) pPos[i] = (Math.random() - 0.5) * 80;
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({ color: 0x00ffcc, size: 0.12, transparent: true, opacity: 0.35 });
+const points = new THREE.Points(pGeo, pMat);
+scene.add(points);
+
+// ─── Signal (flying sphere) ───────────────────────────────────────────────────
+const sigGeo = new THREE.SphereGeometry(0.15, 8, 8);
+
+function spawnSignal(a, b) {
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.46 + Math.random() * 0.12, 1, 0.65) });
+  const mesh = new THREE.Mesh(sigGeo, mat);
+  mesh.position.copy(a.mesh.position);
+  scene.add(mesh);
+
+  // trail meshes
+  const trail = Array.from({ length: 6 }, (_, i) => {
+    const t = new THREE.Mesh(new THREE.SphereGeometry(0.10 - i * 0.012, 6, 6),
+      new THREE.MeshBasicMaterial({ color: mat.color, transparent: true, opacity: 0.6 - i * 0.09 }));
+    scene.add(t);
+    return { mesh: t, pos: a.mesh.position.clone() };
+  });
+
+  signals.push({ mesh, trail, a, b, t: 0, speed: 0.012 + Math.random() * 0.01 });
+}
+
+// ─── Wave activation ──────────────────────────────────────────────────────────
+let waveLayer = 0, waveTimer = 0;
+
+function fireLayer(li) {
+  nodesInLayer(li).forEach(n => {
+    n.act = 1; n.pulseT = 1;
+    if (li < LAYERS.length - 1) {
+      nodesInLayer(li + 1).forEach(b => {
+        if (Math.random() < 0.7) spawnSignal(n, b);
+      });
+    }
+  });
+}
+
+// ─── Thought text ─────────────────────────────────────────────────────────────
+const WORDS = ['ANALYZING', 'PATTERN FOUND', 'BACKPROP', 'GRADIENT', 'INFERENCE', 'LEARNING', 'OPTIMIZING', 'ATTENTION'];
+const thoughtEl = document.getElementById('thought');
+let thoughtTimer = 0;
+function showThought() {
+  thoughtEl.textContent = WORDS[Math.floor(Math.random() * WORDS.length)];
+  thoughtEl.style.opacity = '1';
+  setTimeout(() => thoughtEl.style.opacity = '0', 1400);
+}
+
+// ─── Mouse orbit ─────────────────────────────────────────────────────────────
+let isDragging = false, lastMouse = { x: 0, y: 0 };
+let rotY = 0, rotX = 0.15;
+
+renderer.domElement.addEventListener('mousedown', e => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  rotY += (e.clientX - lastMouse.x) * 0.005;
+  rotX += (e.clientY - lastMouse.y) * 0.004;
+  rotX = Math.max(-0.8, Math.min(0.8, rotX));
+  lastMouse = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('wheel', e => {
+  camera.position.z = Math.max(8, Math.min(60, camera.position.z + e.deltaY * 0.03));
+});
+
+// ─── Main loop ────────────────────────────────────────────────────────────────
+const fpsEl = document.getElementById('fps');
+const sigEl = document.getElementById('sig');
+let frame = 0, fpsCount = 0, lastFpsTime = performance.now();
+
+const pivot = new THREE.Group();
+scene.add(pivot);
+nodeData.forEach(n => { pivot.add(n.mesh); });
+edgeList.forEach(e => { pivot.add(e.line); });
+// Note: signals and particles stay in world space for simplicity
+
+function animate(ts) {
+  requestAnimationFrame(animate);
+  frame++;
+  fpsCount++;
+  if (ts - lastFpsTime >= 1000) { fpsEl.textContent = fpsCount; fpsCount = 0; lastFpsTime = ts; }
+
+  // Auto-rotate + user drag
+  pivot.rotation.y = rotY + frame * 0.003;
+  pivot.rotation.x = rotX;
+  points.rotation.y += 0.0003;
+
+  // Pulse light
+  pulseLight.intensity = 1.5 + Math.sin(frame * 0.04) * 0.5;
+
+  // Wave
+  waveTimer++;
+  if (waveTimer > 80) { waveTimer = 0; fireLayer(waveLayer); waveLayer = (waveLayer + 1) % LAYERS.length; }
+
+  // Thought
+  thoughtTimer++;
+  if (thoughtTimer > 200) { thoughtTimer = 0; showThought(); }
+
+  // Update nodes
+  nodeData.forEach(n => {
+    n.act *= 0.97; n.pulseT *= 0.93;
+    const s = 1 + n.pulseT * 0.6;
+    n.mesh.scale.setScalar(s);
+    n.mesh.material.emissive.setHSL(0.47, 1, 0.05 + n.act * 0.35);
+    n.glow.material.opacity = n.act * 0.3;
+    n.glow.scale.setScalar(1 + n.pulseT * 1.5);
+  });
+
+  // Update edges
+  edgeList.forEach(e => {
+    const act = (e.a.act + e.b.act) / 2;
+    e.line.material.opacity = 0.05 + act * 0.25;
+  });
+
+  // Update signals
+  for (let i = signals.length - 1; i >= 0; i--) {
+    const s = signals[i];
+    s.t += s.speed;
+    if (s.t >= 1) {
+      s.b.act = Math.min(1, s.b.act + 0.7);
+      s.b.pulseT = 1;
+      scene.remove(s.mesh);
+      s.trail.forEach(t => scene.remove(t.mesh));
+      signals.splice(i, 1);
+      continue;
+    }
+    // World-space interpolation (account for pivot rotation)
+    const worldA = s.a.mesh.getWorldPosition(new THREE.Vector3());
+    const worldB = s.b.mesh.getWorldPosition(new THREE.Vector3());
+    s.mesh.position.lerpVectors(worldA, worldB, s.t);
+
+    // Trail
+    s.trail.forEach((tr, ti) => {
+      const tp = Math.max(0, s.t - (ti + 1) * 0.04);
+      tr.mesh.position.lerpVectors(worldA, worldB, tp);
+    });
+  }
+
+  sigEl.textContent = signals.length;
+  renderer.render(scene, camera);
+}
+
+// Random bursts
+setInterval(() => fireLayer(Math.floor(Math.random() * LAYERS.length)), 2500);
+
+animate(0);
+</script>
+</body>
+</html>
