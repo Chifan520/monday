@@ -488,7 +488,7 @@ function zoomOut() {
   }
 
   zoomedPlanet = null;
-  targetDist = 220;
+  targetDist = 73;
   targetCamPos.set(0, 0, 0);
 }
 

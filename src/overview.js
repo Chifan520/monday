@@ -3,7 +3,7 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x000008, 0.0012);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 8000);
-camera.position.set(0, 80, 220);
+camera.position.set(0, 27, 73);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
@@ -727,7 +727,7 @@ function updateComet(c, frame) {
 // ── Mouse orbit ───────────────────────────────────────────────────────────────
 let drag = false, lastX = 0, lastY = 0;
 let rotY = 0.4, rotX = 0.35;
-let camDist = 220, targetDist = 220;
+let camDist = 73, targetDist = 73;
 
 // ── Zoom state ────────────────────────────────────────────────────────────────
 let zoomedPlanet = null;            // which planet we're zoomed into (null = overview)
