@@ -13,6 +13,7 @@ const REAL_TEX_URLS = {
   saturn:  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/1280px-Saturn_during_Equinox.jpg',
   uranus:  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Uranus_Voyager2_color_calibrated.png/1024px-Uranus_Voyager2_color_calibrated.png',
   neptune: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Neptune_Voyager2_color_calibrated.png/1024px-Neptune_Voyager2_color_calibrated.png',
+  moon:    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/1024px-FullMoon2010.jpg',
 };
 Object.entries(REAL_TEX_URLS).forEach(([key, url]) => {
   _texLoader.load(url, tex => { REAL_TEX[key] = tex; }, undefined, () => {});
@@ -253,6 +254,29 @@ function drawFeatureIllo(featureKey) {
       ctx.strokeStyle='rgba(60,50,40,0.7)'; ctx.lineWidth=1.2; ctx.stroke();
       ctx.fillStyle='rgba(40,30,20,0.4)'; ctx.beginPath(); ctx.arc(38,24,5,0,Math.PI*2); ctx.fill();
     },
+
+    // Moon (Luna)
+    maria(ctx) {
+      ctx.fillStyle='#111'; ctx.fillRect(0,0,w,w);
+      ctx.beginPath(); ctx.arc(24,24,18,0,Math.PI*2); ctx.fillStyle='#aaa'; ctx.fill();
+      ctx.fillStyle='rgba(60,55,50,0.6)'; ctx.beginPath(); ctx.ellipse(16,18,8,7,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(55,50,45,0.5)'; ctx.beginPath(); ctx.ellipse(30,30,7,6,0.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(65,60,55,0.5)'; ctx.beginPath(); ctx.ellipse(28,14,5,4,0,0,Math.PI*2); ctx.fill();
+    },
+    highlands(ctx) {
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,w,w);
+      ctx.beginPath(); ctx.arc(24,24,18,0,Math.PI*2); ctx.fillStyle='#ccd'; ctx.fill();
+      for (let i=0;i<40;i++) { crater(4+Math.random()*40,4+Math.random()*40,1+Math.random()*3,'rgba(180,180,190,0.5)'); }
+    },
+    south_pole(ctx) {
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,w,w);
+      ctx.beginPath(); ctx.arc(24,24,18,0,Math.PI*2); ctx.fillStyle='#999'; ctx.fill();
+      ctx.beginPath(); ctx.arc(24,36,14,Math.PI,0);
+      ctx.fillStyle='rgba(40,40,50,0.5)'; ctx.fill();
+      ctx.strokeStyle='rgba(80,80,100,0.7)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(24,36,10,Math.PI,0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(24,36,6,Math.PI,0); ctx.strokeStyle='rgba(60,60,80,0.5)'; ctx.stroke();
+    },
   };
 
   if (illos[featureKey]) illos[featureKey](ctx);
@@ -306,6 +330,11 @@ const FEATURE_DATA = {
     { key:'dark_spot',   title:'大暗斑 Great Dark Spot',    desc:'海王星南半球的巨大反气旋风暴，大小与地球相当。1989年旅行者2号首次观测到，1994年哈勃望远镜发现已消失，但北半球出现新暗斑。暗斑生命周期比木星大红斑短得多，仅数年。' },
     { key:'supersonic',  title:'超音速风暴 Supersonic Winds', desc:'海王星拥有太阳系最高风速，可达2,100km/h（约580m/s，远超地球音速340m/s）。大风速与行星内部热流和环境低温（-218°C）有关，低温降低大气黏性，使气体高速流动成为可能。' },
     { key:'triton',      title:'海卫一特里同 Triton',        desc:'太阳系最大的逆行卫星，绕海王星逆向运行，表明它很可能是被捕获的柯伊伯带天体。表面温度仅-235°C。有活跃的冰火山喷发氮气间歇泉，高度可达8km。表面地质年轻，陨击坑稀少。' },
+  ],
+  moon: [
+    { key:'maria',       title:'月海 Lunar Maria',          desc:'月球正面暗色区域，约占可见面积31%。由约30-39亿年前的玄武岩熔岩流填充巨大撞击盆地形成。雨海直径1,123km，静海直径873km。月海陨击坑密度远低于月陆，表明其表面相对年轻。' },
+    { key:'highlands',   title:'月陆 Highlands',            desc:'亮色斜长岩高地，覆盖月球大部分表面，是月球最古老的地壳（>44亿年）。由月球早期岩浆洋结晶形成，轻质斜长石上浮堆积。月陆陨击坑极其密集，记录着太阳系早期剧烈撞击史。' },
+    { key:'south_pole',  title:'南极-艾特肯盆地 SPA Basin',  desc:'太阳系最大确认撞击盆地，直径约2,500km，深达13km。位于月球背面南极附近，形成于约42亿年前。盆地底部暴露下月壳甚至上月幔物质，是研究月球内部结构的重要窗口。中国嫦娥四号在此区域实现人类首次月球背面着陆。' },
   ],
 };
 FEATURE_DATA.mercury = [
@@ -432,9 +461,15 @@ function zoomToPlanet(p) {
       new THREE.MeshBasicMaterial({ color: 0x8899cc, transparent: true, opacity: 0.2, fog: false, depthWrite: false }));
     p.mesh.add(storm); surfaceAnimLayers.push({ mesh: storm, type: 'rotate', speed: 0.0006, planetKey: en });
   }
+  else if (en === 'moon') {
+    const dust = new THREE.Mesh(new THREE.SphereGeometry(r * 1.02, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x999999, transparent: true, opacity: 0.12, fog: false, depthWrite: false }));
+    p.mesh.add(dust); surfaceAnimLayers.push({ mesh: dust, type: 'none', speed: 0, planetKey: en });
+  }
 
-  // Open left feature panel
+  // Open panels
   openFeaturePanel(p);
+  openPanelForZoom(p);
 }
 
 function zoomOut() {
@@ -457,3 +492,97 @@ function zoomOut() {
   targetCamPos.set(0, 0, 0);
 }
 
+// ── Zoom-mode panel with Earth ↔ Moon subtitle toggle ────────────────────────
+function openPanelForZoom(p) {
+  const moon = (typeof moonEntries !== 'undefined') ? moonEntries.find(m => m.parentPlanet === p || m.parentPlanetName === (p.en || '')) : null;
+  const actualParent = (typeof planetMeshes !== 'undefined' && p.parentPlanetName) ? planetMeshes.find(pp => pp.en === p.parentPlanetName) : null;
+
+  let subtitleHTML = '';
+  if (moon) {
+    subtitleHTML = `<span class="p-subtitle-link" data-zoom-target="moon">月球 MOON</span>`;
+  } else if (actualParent) {
+    subtitleHTML = `<span class="p-subtitle-link" data-zoom-target="planet">${actualParent.name} ${actualParent.en.toUpperCase()}</span>`;
+  }
+
+  panelBody.innerHTML = `
+    <div class="p-header">
+      <div class="p-name-row">
+        <span class="p-name">${p.name}</span>
+        ${subtitleHTML}
+      </div>
+      <div class="p-en">${p.en.toUpperCase()}</div>
+      <div class="p-tagline">${p.tagline}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-section-title">概述</div>
+      <p>${p.desc}</p>
+    </div>
+    <div class="p-section">
+      <div class="p-section-title">地形与地质</div>
+      <p>${p.geology}</p>
+    </div>
+    <div class="p-section">
+      <div class="p-section-title">天体物理数据</div>
+      <div class="p-stats">
+        ${p.stats.map(s => `
+          <div class="p-stat">
+            <div class="p-stat-label">${s.label}</div>
+            <div class="p-stat-value">${s.value}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  const link = panelBody.querySelector('.p-subtitle-link');
+  if (link) {
+    link.addEventListener('click', () => {
+      if (moon) switchZoomTarget(moon);
+      else if (actualParent) switchZoomTarget(actualParent);
+    });
+  }
+
+  panel.classList.add('open');
+}
+
+// Switch the zoomed planet (e.g. Earth → Moon) without full zoomOut/zoomIn
+function switchZoomTarget(target) {
+  if (!zoomedPlanet) return;
+  // Clean up current surface layers
+  surfaceAnimLayers.forEach(l => l.mesh.parent && l.mesh.parent.remove(l.mesh));
+  surfaceAnimLayers.length = 0;
+  // Restore current planet's material
+  if (prevPhongMat) {
+    zoomedPlanet.mesh.material.dispose();
+    zoomedPlanet.mesh.material = prevPhongMat;
+    prevPhongMat = null;
+  }
+  // Apply zoom to new target
+  zoomedPlanet = target;
+  target.mesh.getWorldPosition(_worldPos);
+  targetCamPos.copy(_worldPos);
+  targetDist = (target.r || 6) * ZOOM_DIST_FACTOR;
+
+  const en = (target.en || '').toLowerCase();
+  const r = target.r || 1;
+  const key = en;
+
+  prevPhongMat = target.mesh.material;
+  const realTex = REAL_TEX[key];
+  const finalTex = realTex || prevPhongMat.map;
+  const mat = new THREE.MeshBasicMaterial({ map: finalTex, fog: false });
+  if (mat.map) mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
+  target.mesh.material = mat;
+
+  // Surface layers for new target
+  if (en === 'earth') {
+    const cloud = new THREE.Mesh(new THREE.SphereGeometry(r * 1.03, 48, 48),
+      new THREE.MeshBasicMaterial({ map: dynamicCloudTex, transparent: true, opacity: 0.45, fog: false, depthWrite: false }));
+    target.mesh.add(cloud); surfaceAnimLayers.push({ mesh: cloud, type: 'rotate', speed: 0.0008, planetKey: en });
+  } else if (en === 'moon') {
+    const dust = new THREE.Mesh(new THREE.SphereGeometry(r * 1.02, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x999999, transparent: true, opacity: 0.12, fog: false, depthWrite: false }));
+    target.mesh.add(dust); surfaceAnimLayers.push({ mesh: dust, type: 'none', speed: 0, planetKey: en });
+  }
+
+  openFeaturePanel(target);
+  openPanelForZoom(target);
+}

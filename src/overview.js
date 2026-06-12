@@ -457,6 +457,7 @@ const PLANETS = [
 
 const SPEED_SCALE = 0.0012; // very slow — grand, majestic feel
 const planetMeshes = [];
+const moonEntries = [];   // interactable moon data entries
 
 PLANETS.forEach(p => {
   // Orbit ring — 3-layer HUD navigation system (all parented to pivot for correct tilt)
@@ -537,12 +538,91 @@ PLANETS.forEach(p => {
     const moonPivot = new THREE.Object3D();
     mesh.add(moonPivot);
     const moon = new THREE.Mesh(
-      new THREE.SphereGeometry(0.3, 24, 24),
+      new THREE.SphereGeometry(0.3, 28, 28),
       new THREE.MeshPhongMaterial({ map: noiseTexture(0x999999, [['150,140,130',0.4,20],['80,70,60',0.3,15]]), shininess: 5 })
     );
     moon.position.x = 2.6;
     moonPivot.add(moon);
-    p.moonPivot = moonPivot;
+    p.moonPivots = [{ pivot: moonPivot, speed: 0.018 }];
+
+    moonEntries.push({
+      name: '月球', en: 'Moon', r: 0.3, mesh,
+      parentPlanetName: 'Earth',
+      tagline: '地球唯一的天然卫星，潮汐锁定的荒芜世界。',
+      desc: '月球是地球唯一的天然卫星，直径3,474km，距地球约38.4万km。由于潮汐锁定，月球始终以同一面朝向地球。月球没有大气层和液态水，表面温差极大，白昼可达127°C，夜晚降至-173°C。月球的引力是地球海洋潮汐的主要驱动力，同时也稳定了地球的自转轴倾斜。',
+      geology: '月球表面分为月海（暗色玄武岩平原，约占正面31%）和月陆（亮色斜长岩高地，更为古老）。月海形成于约30-39亿年前的火山活动，月陆则保存了超过44亿年的撞击记录。南极艾特肯盆地直径约2,500km，深13km，是太阳系最大的确认撞击盆地之一。月球内部已冷却固化，月震极少且微弱。',
+      stats: [
+        { label: '质量', value: '7.34 × 10²² kg' },
+        { label: '半径', value: '1,737 km' },
+        { label: '公转周期', value: '27.3 地球日' },
+        { label: '距地球', value: '384,400 km' },
+        { label: '表面重力', value: '1.62 m/s²' },
+        { label: '表面温度', value: '-173°C ~ 127°C' },
+      ],
+    });
+  }
+
+  // Mars moons: Phobos & Deimos
+  if (p.en === 'Mars') {
+    p.moonPivots = [];
+    const phPivot = new THREE.Object3D(); mesh.add(phPivot);
+    const phobos = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 8, 8),
+      new THREE.MeshPhongMaterial({ color: 0x887766, shininess: 3, specular: new THREE.Color(0x111111) })
+    );
+    phobos.position.x = 1.6; phPivot.add(phobos);
+    p.moonPivots.push({ pivot: phPivot, speed: 0.048 });
+    const dePivot = new THREE.Object3D(); mesh.add(dePivot);
+    const deimos = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 8, 8),
+      new THREE.MeshPhongMaterial({ color: 0x998877, shininess: 3, specular: new THREE.Color(0x111111) })
+    );
+    deimos.position.x = 2.3; dePivot.add(deimos);
+    p.moonPivots.push({ pivot: dePivot, speed: 0.019 });
+  }
+
+  // Jupiter: 4 Galilean moons
+  if (p.en === 'Jupiter') {
+    p.moonPivots = [];
+    const galilean = [
+      { dist: 5.6, r: 0.22, col: 0xddcc44, speed: 0.040 },
+      { dist: 6.9, r: 0.20, col: 0xccddee, speed: 0.030 },
+      { dist: 8.3, r: 0.28, col: 0xbbccdd, speed: 0.024 },
+      { dist: 9.9, r: 0.26, col: 0x998877, speed: 0.018 },
+    ];
+    galilean.forEach(g => {
+      const gPivot = new THREE.Object3D(); mesh.add(gPivot);
+      const gMoon = new THREE.Mesh(
+        new THREE.SphereGeometry(g.r, 16, 16),
+        new THREE.MeshPhongMaterial({ color: g.col, shininess: 8, specular: new THREE.Color(0x111111) })
+      );
+      gMoon.position.x = g.dist; gPivot.add(gMoon);
+      p.moonPivots.push({ pivot: gPivot, speed: g.speed });
+    });
+  }
+
+  // Saturn: Titan
+  if (p.en === 'Saturn') {
+    p.moonPivots = [];
+    const tPivot = new THREE.Object3D(); mesh.add(tPivot);
+    const titan = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 16, 16),
+      new THREE.MeshPhongMaterial({ color: 0xddaa66, shininess: 8, specular: new THREE.Color(0x111111) })
+    );
+    titan.position.x = 9.5; tPivot.add(titan);
+    p.moonPivots.push({ pivot: tPivot, speed: 0.012 });
+  }
+
+  // Neptune: Triton (retrograde)
+  if (p.en === 'Neptune') {
+    p.moonPivots = [];
+    const trPivot = new THREE.Object3D(); mesh.add(trPivot);
+    const triton = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 16, 16),
+      new THREE.MeshPhongMaterial({ color: 0xaabbcc, shininess: 8, specular: new THREE.Color(0x111111) })
+    );
+    triton.position.x = 4.2; trPivot.add(triton);
+    p.moonPivots.push({ pivot: trPivot, speed: -0.015 });
   }
 
   // Per-planet rim glow sprite — colour matches planet tint
@@ -556,7 +636,12 @@ PLANETS.forEach(p => {
   p.glowSprite = glow;
 
   pivot.rotation.y = Math.random() * Math.PI * 2;
-  planetMeshes.push({ ...p, pivot, mesh });
+  const pmEntry = { ...p, pivot, mesh };
+  planetMeshes.push(pmEntry);
+  // Fix moon parentPlanet refs to point to actual planetMeshes entry
+  moonEntries.forEach(m => {
+    if (m.parentPlanetName === p.en) m.parentPlanet = pmEntry;
+  });
 });
 
 // ── Asteroid belt ─────────────────────────────────────────────────────────────
@@ -663,12 +748,35 @@ document.getElementById('panel-close').addEventListener('click', () => {
 
 let selectedPlanet = null;
 
+// Find moon entry for a planet
+function getMoonForPlanet(p) {
+  return moonEntries.find(m => m.parentPlanet === p || m.parentPlanetName === (p.en || '')) || null;
+}
+// Find planet entry for a moon
+function getPlanetForMoon(m) {
+  if (m.parentPlanet) return m.parentPlanet;
+  if (m.parentPlanetName) return planetMeshes.find(p => p.en === m.parentPlanetName) || null;
+  return null;
+}
+
 function openPanel(p) {
   selectedPlanet = p;
+  const moon = getMoonForPlanet(p);
+  const parentPlanet = getPlanetForMoon(p);
+
+  let subtitleHTML = '';
+  if (moon) {
+    subtitleHTML = `<span class="p-subtitle-link" data-target="moon">月球 MOON</span>`;
+  } else if (parentPlanet) {
+    subtitleHTML = `<span class="p-subtitle-link" data-target="planet">${parentPlanet.name} ${parentPlanet.en.toUpperCase()}</span>`;
+  }
 
   panelBody.innerHTML = `
     <div class="p-header">
-      <div class="p-name">${p.name}</div>
+      <div class="p-name-row">
+        <span class="p-name">${p.name}</span>
+        ${subtitleHTML}
+      </div>
       <div class="p-en">${p.en.toUpperCase()}</div>
       <div class="p-tagline">${p.tagline}</div>
     </div>
@@ -690,6 +798,15 @@ function openPanel(p) {
           </div>`).join('')}
       </div>
     </div>`;
+
+  const link = panelBody.querySelector('.p-subtitle-link');
+  if (link) {
+    link.addEventListener('click', () => {
+      if (moon) openPanel(moon);
+      else if (parentPlanet) openPanel(parentPlanet);
+    });
+  }
+
   panel.classList.add('open');
 }
 
@@ -859,7 +976,7 @@ function animate(ts) {
     p.pivot.rotation.y += p.speed * SPEED_SCALE;
     // Slower self-rotation when zoomed for detail viewing
     p.mesh.rotation.y += (zoomedPlanet === p ? 0.002 : 0.003);
-    if (p.moonPivot) p.moonPivot.rotation.y += 0.018;
+    if (p.moonPivots) p.moonPivots.forEach(m => { m.pivot.rotation.y += m.speed; });
     if (p.glowSprite) {
       p.glowSprite.material.opacity = Math.max(0.02, 0.06 - p.orbit * 0.0003);
     }

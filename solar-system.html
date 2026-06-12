@@ -85,10 +85,24 @@ body { background: #000005; overflow: hidden; font-family: 'Courier New', monosp
 
 /* header */
 .p-header { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid rgba(0,180,160,0.12); }
+.p-name-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .p-name {
   font-size: 24px; letter-spacing: 5px; font-weight: normal;
   color: rgba(210,240,255,0.92);
   text-shadow: 0 0 24px rgba(0,180,220,0.25);
+}
+.p-subtitle-link {
+  font-size: 11px; letter-spacing: 2px; font-weight: normal;
+  color: rgba(0,200,180,0.45);
+  cursor: pointer; transition: all 0.2s;
+  border: 1px solid rgba(0,180,160,0.18); border-radius: 3px;
+  padding: 2px 8px;
+}
+.p-subtitle-link:hover {
+  color: rgba(0,255,210,0.9);
+  border-color: rgba(0,220,195,0.6);
+  background: rgba(0,160,140,0.12);
+  text-shadow: 0 0 8px rgba(0,200,180,0.3);
 }
 .p-en { font-size: 9px; letter-spacing: 4px; color: rgba(0,200,180,0.4); margin-top: 4px; }
 .p-tagline { font-size: 11px; color: rgba(130,190,210,0.6); margin-top: 10px; line-height: 1.75; }
