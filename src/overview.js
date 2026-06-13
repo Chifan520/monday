@@ -902,6 +902,7 @@ function getRayHit(clientX, clientY) {
 function checkHoverHint(e) {
   const p = getRayHit(e.clientX, e.clientY);
   renderer.domElement.style.cursor = p ? 'pointer' : 'default';
+  if (p) loadTexIfNeeded((p.en || '').toLowerCase()); // 预热放大模式纹理
 }
 
 // ── Surface animation layers (added when zoomed) ───────────────────────────────
